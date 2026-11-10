@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Data Fetcher</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+
+    <header class="navbar">
+        <h2>☁ Weather Fetcher</h2>
+        <span>Live Weather Dashboard</span>
+    </header>
+
+    <main class="container">
+
+        <section class="search-section">
+            <h1>Check the Weather</h1>
+            <p>Get current weather information for any city.</p>
+
+            <form id="weatherForm">
+                <input
+                    type="text"
+                    id="cityInput"
+                    placeholder="Enter city name (e.g. Kolkata)"
+                    required
+                >
+                <button type="submit" id="searchBtn">Search</button>
+            </form>
+
+            <p id="message" aria-live="polite"></p>
+        </section>
+
+        <section class="weather-card" id="weatherCard" hidden>
+
+            <div class="weather-heading">
+                <div>
+                    <h2 id="cityName">City</h2>
+                    <p id="countryName">Country</p>
+                </div>
+                <div class="weather-icon" id="weatherIcon">☁️</div>
+            </div>
+
+            <div class="temperature">
+                <span id="temperature">--</span>
+                <span>°C</span>
+            </div>
+
+            <p class="description" id="description">Weather condition</p>
+
+            <div class="details">
+
+                <div class="detail-box">
+                    <span>💧</span>
+                    <p>Humidity</p>
+                    <h3 id="humidity">--%</h3>
+                </div>
+
+                <div class="detail-box">
+                    <span>🌬️</span>
+                    <p>Wind Speed</p>
+                    <h3 id="windSpeed">-- m/s</h3>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>Weather Data Fetcher | Frontend v1.0.0</p>
+        <p>Powered by AWS Lambda and OpenWeatherMap</p>
+    </footer>
+
+</body>
+</html>
