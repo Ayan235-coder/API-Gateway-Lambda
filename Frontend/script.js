@@ -1,4 +1,4 @@
-const API_URL = "https://9xcn498p98.execute-api.eu-north-1.amazonaws.com/weather";
+const API_URL = "https://jruiwisnb8.execute-api.eu-north-1.amazonaws.com/weather";
 
 const form = document.getElementById("weatherForm");
 const cityInput = document.getElementById("cityInput");
