@@ -30,7 +30,7 @@ form.addEventListener("submit", async function (event) {
     try {
 
         const response = await fetch(
-            `${API_URL.replace(/\/$/, "")}/weather?city=${encodeURIComponent(city)}`
+            `${API_URL.replace(/\/$/, "")}?city=${encodeURIComponent(city)}`
         );
 
         const data = await response.json();
