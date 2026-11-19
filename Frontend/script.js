@@ -3,8 +3,17 @@ const API_URL = "https://d5v0esszy4.execute-api.eu-north-1.amazonaws.com/weather
 const form = document.getElementById("weatherForm");
 const cityInput = document.getElementById("cityInput");
 const searchBtn = document.getElementById("searchBtn");
+const searchButtonText = document.getElementById("searchButtonText");
 const message = document.getElementById("message");
 const weatherCard = document.getElementById("weatherCard");
+const cityChips = document.querySelectorAll(".city-chip");
+
+cityChips.forEach(function (chip) {
+    chip.addEventListener("click", function () {
+        cityInput.value = chip.dataset.city;
+        form.requestSubmit();
+    });
+});
 
 form.addEventListener("submit", async function (event) {
 
@@ -13,18 +22,19 @@ form.addEventListener("submit", async function (event) {
     const city = cityInput.value.trim();
 
     if (!city) {
-        message.textContent = "Please enter a city name.";
+        setMessage("Please enter a city name.", "is-error");
         return;
     }
 
     if (API_URL.includes("PASTE_YOUR")) {
-        message.textContent = "Please configure your API Gateway URL first.";
+        setMessage("Please configure your API Gateway URL first.", "is-error");
         return;
     }
 
     searchBtn.disabled = true;
-    searchBtn.textContent = "Searching...";
-    message.textContent = "Fetching weather information...";
+    searchBtn.setAttribute("aria-busy", "true");
+    searchButtonText.textContent = "Searching";
+    setMessage("Fetching weather information...", "is-loading");
     weatherCard.hidden = true;
 
     try {
@@ -41,22 +51,27 @@ form.addEventListener("submit", async function (event) {
 
         displayWeather(data);
 
-        message.textContent = "Weather information loaded successfully.";
+        setMessage("Weather information loaded successfully.", "is-success");
 
     } catch (error) {
 
-        message.textContent = error.message;
+        setMessage(error.message || "Unable to fetch weather information.", "is-error");
         weatherCard.hidden = true;
 
     } finally {
 
         searchBtn.disabled = false;
-        searchBtn.textContent = "Search";
+        searchBtn.removeAttribute("aria-busy");
+        searchButtonText.textContent = "Explore";
 
     }
 
 });
 
+function setMessage(text, state) {
+    message.textContent = text;
+    message.className = `status-message ${state}`;
+}
 
 function displayWeather(data) {
 

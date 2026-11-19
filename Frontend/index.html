@@ -10,68 +10,91 @@
 <body>
 
     <header class="navbar">
-        <h2>☁ Weather Fetcher</h2>
-        <span>Live Weather Dashboard</span>
+        <a class="brand" href="#" aria-label="Weatherly home">
+            <span class="brand-mark" aria-hidden="true">☁</span>
+            <span>weatherly</span>
+        </a>
+        <span class="nav-status"><span class="status-dot"></span> Live weather</span>
     </header>
 
     <main class="container">
 
         <section class="search-section">
-            <h1>Check the Weather</h1>
-            <p>Get current weather information for any city.</p>
+            <p class="eyebrow"><span></span> YOUR DAILY FORECAST, MADE SIMPLE</p>
+            <h1>Find your kind of <span>weather.</span></h1>
+            <p class="intro">A little sunshine, a little rain — see what's happening anywhere in the world.</p>
 
             <form id="weatherForm">
+                <label class="sr-only" for="cityInput">City name</label>
+                <span class="input-icon" aria-hidden="true">⌕</span>
                 <input
                     type="text"
                     id="cityInput"
-                    placeholder="Enter city name (e.g. Kolkata)"
+                    placeholder="Search for a city..."
+                    autocomplete="off"
                     required
                 >
-                <button type="submit" id="searchBtn">Search</button>
+                <button type="submit" id="searchBtn">
+                    <span id="searchButtonText">Explore</span>
+                    <span class="button-arrow" aria-hidden="true">→</span>
+                </button>
             </form>
 
-            <p id="message" aria-live="polite"></p>
+            <div class="quick-searches" aria-label="Popular cities">
+                <span>Try</span>
+                <button type="button" class="city-chip" data-city="Kolkata">Kolkata</button>
+                <button type="button" class="city-chip" data-city="London">London</button>
+                <button type="button" class="city-chip" data-city="Tokyo">Tokyo</button>
+            </div>
+
+            <p id="message" class="status-message" role="status" aria-live="polite"></p>
         </section>
 
         <section class="weather-card" id="weatherCard" hidden>
+
+            <div class="card-topline">
+                <span class="conditions-label">CURRENT CONDITIONS</span>
+                <span class="live-indicator"><span class="status-dot"></span> RIGHT NOW</span>
+            </div>
 
             <div class="weather-heading">
                 <div>
                     <h2 id="cityName">City</h2>
                     <p id="countryName">Country</p>
                 </div>
-                <div class="weather-icon" id="weatherIcon">☁️</div>
+                <div class="weather-icon" id="weatherIcon" aria-hidden="true">☁️</div>
             </div>
 
-            <div class="temperature">
-                <span id="temperature">--</span>
-                <span>°C</span>
+            <div class="weather-summary">
+                <div class="temperature">
+                    <span id="temperature">--</span><span class="temperature-unit">°</span>
+                </div>
+                <p class="description" id="description">Weather condition</p>
             </div>
-
-            <p class="description" id="description">Weather condition</p>
 
             <div class="details">
-
                 <div class="detail-box">
-                    <span>💧</span>
-                    <p>Humidity</p>
-                    <h3 id="humidity">--%</h3>
+                    <span class="detail-icon" aria-hidden="true">◉</span>
+                    <div>
+                        <p>Humidity</p>
+                        <h3 id="humidity">--%</h3>
+                    </div>
                 </div>
-
                 <div class="detail-box">
-                    <span>🌬️</span>
-                    <p>Wind Speed</p>
-                    <h3 id="windSpeed">-- m/s</h3>
+                    <span class="detail-icon wind-icon" aria-hidden="true">〰</span>
+                    <div>
+                        <p>Wind speed</p>
+                        <h3 id="windSpeed">-- m/s</h3>
+                    </div>
                 </div>
-
             </div>
         </section>
 
     </main>
 
     <footer>
-        <p>Weather Data Fetcher | Frontend v1.0.0</p>
-        <p>Powered by AWS Lambda and OpenWeatherMap</p>
+        <span>MADE FOR THE MOMENT</span>
+        <span>Weather data by OpenWeatherMap</span>
     </footer>
 
 </body>
