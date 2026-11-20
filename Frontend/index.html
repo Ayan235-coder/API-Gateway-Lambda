@@ -7,8 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
 </head>
-<body>
-
+<body class="app-shell">
     <header class="navbar">
         <a class="brand" href="#" aria-label="Weatherly home">
             <span class="brand-mark" aria-hidden="true">☁</span>
@@ -18,77 +17,103 @@
     </header>
 
     <main class="container">
-
-        <section class="search-section">
-            <p class="eyebrow"><span></span> YOUR DAILY FORECAST, MADE SIMPLE</p>
-            <h1>Find your kind of <span>weather.</span></h1>
-            <p class="intro">A little sunshine, a little rain — see what's happening anywhere in the world.</p>
-
-            <form id="weatherForm">
-                <label class="sr-only" for="cityInput">City name</label>
-                <span class="input-icon" aria-hidden="true">⌕</span>
-                <input
-                    type="text"
-                    id="cityInput"
-                    placeholder="Search for a city..."
-                    autocomplete="off"
-                    required
-                >
-                <button type="submit" id="searchBtn">
-                    <span id="searchButtonText">Explore</span>
-                    <span class="button-arrow" aria-hidden="true">→</span>
-                </button>
-            </form>
-
-            <div class="quick-searches" aria-label="Popular cities">
-                <span>Try</span>
-                <button type="button" class="city-chip" data-city="Kolkata">Kolkata</button>
-                <button type="button" class="city-chip" data-city="London">London</button>
-                <button type="button" class="city-chip" data-city="Tokyo">Tokyo</button>
-            </div>
-
-            <p id="message" class="status-message" role="status" aria-live="polite"></p>
-        </section>
-
-        <section class="weather-card" id="weatherCard" hidden>
-
-            <div class="card-topline">
-                <span class="conditions-label">CURRENT CONDITIONS</span>
-                <span class="live-indicator"><span class="status-dot"></span> RIGHT NOW</span>
-            </div>
-
-            <div class="weather-heading">
-                <div>
-                    <h2 id="cityName">City</h2>
-                    <p id="countryName">Country</p>
+        <div class="dashboard-grid">
+            <section class="weather-card" id="weatherCard" hidden>
+                <div class="card-topline">
+                    <span class="conditions-label">CURRENT CONDITIONS</span>
                 </div>
-                <div class="weather-icon" id="weatherIcon" aria-hidden="true">☁️</div>
-            </div>
 
-            <div class="weather-summary">
-                <div class="temperature">
-                    <span id="temperature">--</span><span class="temperature-unit">°</span>
+                <div class="current-overview">
+                    <div class="current-location">
+                        <svg class="location-pin" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" fill="none" stroke="currentColor" stroke-width="1.7"/>
+                            <circle cx="12" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/>
+                        </svg>
+                        <div>
+                            <h2 id="cityName">City</h2>
+                            <p id="countryName">Country</p>
+                        </div>
+                    </div>
+                    <div class="current-reading">
+                        <div class="temperature">
+                            <span id="temperature">--</span><span class="temperature-unit">°</span>
+                        </div>
+                        <p class="description" id="description">Weather condition</p>
+                    </div>
                 </div>
-                <p class="description" id="description">Weather condition</p>
-            </div>
 
-            <div class="details">
-                <div class="detail-box">
-                    <span class="detail-icon" aria-hidden="true">◉</span>
+                <div class="detail-box humidity-box">
+                    <svg class="detail-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 2.8S6.2 9.2 6.2 13.7a5.8 5.8 0 0 0 11.6 0C17.8 9.2 12 2.8 12 2.8Z" fill="none" stroke="currentColor" stroke-width="1.7"/>
+                        <path d="M9.2 14.6a2.8 2.8 0 0 0 2.8 2.8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/>
+                    </svg>
                     <div>
                         <p>Humidity</p>
                         <h3 id="humidity">--%</h3>
                     </div>
                 </div>
-                <div class="detail-box">
-                    <span class="detail-icon wind-icon" aria-hidden="true">〰</span>
-                    <div>
-                        <p>Wind speed</p>
-                        <h3 id="windSpeed">-- m/s</h3>
+
+                <div class="current-wind-row">
+                    <div class="detail-box wind-box">
+                        <svg class="detail-icon wind-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3 8h11.5a3 3 0 1 0-2.8-4M2 12h16a3 3 0 1 1-2.8 4M4 16h6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/>
+                        </svg>
+                        <div>
+                            <p>Wind speed</p>
+                            <h3 id="windSpeed">-- m/s</h3>
+                        </div>
                     </div>
+                    <div class="weather-icon" id="weatherIcon" aria-hidden="true">☁️</div>
                 </div>
-            </div>
-        </section>
+
+                <div class="weather-footer">
+                    <span class="status-dot"></span>
+                    <span>RIGHT NOW</span>
+                </div>
+            </section>
+
+            <section class="search-section">
+                <h1>Find your kind of <span>weather.</span></h1>
+                <p class="eyebrow"><span></span> YOUR DAILY FORECAST, MADE SIMPLE</p>
+
+                <form id="weatherForm">
+                    <div class="search-input-bar">
+                        <label class="sr-only" for="cityInput">City name</label>
+                        <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" fill="none" stroke="currentColor" stroke-width="1.7"/>
+                            <circle cx="12" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/>
+                        </svg>
+                        <input
+                            type="text"
+                            id="cityInput"
+                            placeholder="Search for a city..."
+                            autocomplete="off"
+                            required
+                        >
+                        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                            <path d="m15.5 15.5 4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/>
+                        </svg>
+                    </div>
+
+                    <div class="quick-searches" aria-label="Popular cities">
+                        <span>Try</span>
+                        <button type="button" class="city-chip" data-city="Kolkata">Kolkata</button>
+                        <button type="button" class="city-chip" data-city="London">London</button>
+                        <button type="button" class="city-chip" data-city="Tokyo">Tokyo</button>
+                    </div>
+
+                    <div class="search-status-bar">
+                        <span class="status-dot search-status-dot" aria-hidden="true"></span>
+                        <p id="message" class="status-message" role="status" aria-live="polite"></p>
+                        <button type="submit" id="searchBtn">
+                            <span id="searchButtonText">Explore</span>
+                            <span class="button-arrow" aria-hidden="true">→</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
 
         <section class="forecast-section" id="forecastSection" aria-label="5-day forecast" hidden>
             <h2 class="conditions-label">5-DAY FORECAST</h2>

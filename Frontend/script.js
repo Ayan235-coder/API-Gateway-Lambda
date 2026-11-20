@@ -162,6 +162,11 @@ function displayForecast(forecast) {
         }).format(new Date(`${day.date}T12:00:00`));
         heading.append(dayName, date);
 
+        const temperatureSummary = document.createElement("p");
+        temperatureSummary.className = "forecast-temp-summary";
+        temperatureSummary.textContent =
+            `${Math.round(minTemperature)}° to ${Math.round(maxTemperature)}°`;
+
         const icon = createForecastIcon(day, index);
 
         const description = document.createElement("p");
@@ -225,7 +230,14 @@ function displayForecast(forecast) {
         wind.append(windValue);
         stats.append(humidity, wind);
 
-        card.append(heading, icon, description, temperatureRange, stats);
+        card.append(
+            heading,
+            temperatureSummary,
+            icon,
+            description,
+            temperatureRange,
+            stats
+        );
         if (index === 0) {
             card.classList.add("active");
         }
