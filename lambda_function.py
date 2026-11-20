@@ -3,6 +3,13 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import os
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+
+
+def fetch_json(url):
+    with urllib.request.urlopen(url, timeout=10) as response:
+        return json.loads(response.read())
 
 
 def lambda_handler(event, context):
@@ -53,30 +60,65 @@ def lambda_handler(event, context):
         lat = locations[0]["lat"]
         lon = locations[0]["lon"]
 
-        # Fetch current weather using coordinates
+        # Fetch current weather and forecast concurrently using coordinates.
         weather_params = urllib.parse.urlencode({
             "lat": lat,
             "lon": lon,
             "appid": api_key,
             "units": "metric"
         })
-
         weather_url = (
             "https://api.openweathermap.org/data/2.5/weather?"
             + weather_params
         )
+        forecast_url = (
+            "https://api.openweathermap.org/data/2.5/forecast?"
+            + weather_params
+        )
 
-        with urllib.request.urlopen(weather_url, timeout=10) as response:
-            data = json.loads(response.read())
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            current_future = executor.submit(fetch_json, weather_url)
+            forecast_future = executor.submit(fetch_json, forecast_url)
+            current_data = current_future.result()
+            forecast_data = forecast_future.result()
 
-        # Format weather information
+        grouped_forecast = {}
+        for entry in forecast_data["list"]:
+            forecast_date, forecast_time = entry["dt_txt"].split()
+            grouped_forecast.setdefault(forecast_date, []).append(
+                (forecast_time, entry)
+            )
+
+        daily_forecast = []
+        for forecast_date, entries in sorted(grouped_forecast.items()):
+            noon_entry = next(
+                (entry for time, entry in entries if time == "12:00:00"),
+                entries[0][1]
+            )
+            temperatures = [entry["main"]["temp"] for _, entry in entries]
+            daily_forecast.append({
+                "date": forecast_date,
+                "dayName": datetime.strptime(
+                    forecast_date, "%Y-%m-%d"
+                ).strftime("%A"),
+                "icon": noon_entry["weather"][0]["icon"],
+                "description": noon_entry["weather"][0]["description"],
+                "tempMin": min(temperatures),
+                "tempMax": max(temperatures),
+                "humidity": noon_entry["main"]["humidity"],
+                "wind_speed": noon_entry["wind"]["speed"]
+            })
+
         result = {
-            "city": data["name"],
-            "country": data["sys"]["country"],
-            "temperature": data["main"]["temp"],
-            "humidity": data["main"]["humidity"],
-            "weather": data["weather"][0]["description"],
-            "wind_speed": data["wind"]["speed"]
+            "current": {
+                "city": current_data["name"],
+                "country": current_data["sys"]["country"],
+                "temperature": current_data["main"]["temp"],
+                "humidity": current_data["main"]["humidity"],
+                "weather": current_data["weather"][0]["description"],
+                "wind_speed": current_data["wind"]["speed"]
+            },
+            "forecast": daily_forecast[:5]
         }
 
         return {

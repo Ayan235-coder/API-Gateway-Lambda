@@ -18,10 +18,14 @@ Amazon API Gateway, Python and OpenWeatherMap.
 - Get humidity
 - Get weather description
 - Get wind speed
+- Get a 5-day forecast with daily temperature ranges
 - JSON response
 
 ## API Endpoint
 GET /weather?city=Kolkata
+
+The response contains a `current` object and a `forecast` array with up to five
+days. Daily forecast temperatures are in Celsius.
 
 ## Installation
 1. Clone this repository.
