@@ -3,129 +3,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Data Fetcher</title>
+    <meta name="theme-color" content="#1B3B64">
+    <title>Weather Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <script src="script.js" defer></script>
 </head>
-<body class="app-shell">
-    <header class="navbar">
-        <a class="brand" href="#" aria-label="Weatherly home">
-            <span class="brand-mark" aria-hidden="true">☁</span>
-            <span>weatherly</span>
-        </a>
-        <span class="nav-status"><span class="status-dot"></span> Live weather</span>
-    </header>
-
-    <main class="container">
-        <div class="dashboard-grid">
-            <section class="weather-card" id="weatherCard" hidden>
-                <div class="card-topline">
-                    <span class="conditions-label">CURRENT CONDITIONS</span>
-                </div>
-
-                <div class="current-overview">
-                    <div class="current-location">
-                        <svg class="location-pin" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" fill="none" stroke="currentColor" stroke-width="1.7"/>
-                            <circle cx="12" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/>
-                        </svg>
-                        <div>
-                            <h2 id="cityName">City</h2>
-                            <p id="countryName">Country</p>
-                        </div>
-                    </div>
-                    <div class="current-reading">
-                        <div class="temperature">
-                            <span id="temperature">--</span><span class="temperature-unit">°</span>
-                        </div>
-                        <p class="description" id="description">Weather condition</p>
-                    </div>
-                </div>
-
-                <div class="detail-box humidity-box">
-                    <svg class="detail-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 2.8S6.2 9.2 6.2 13.7a5.8 5.8 0 0 0 11.6 0C17.8 9.2 12 2.8 12 2.8Z" fill="none" stroke="currentColor" stroke-width="1.7"/>
-                        <path d="M9.2 14.6a2.8 2.8 0 0 0 2.8 2.8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/>
+<body>
+    <div class="dashboard-shell">
+        <aside class="icon-rail" aria-label="Dashboard navigation">
+            <a class="rail-logo" href="#dashboard" aria-label="Weather dashboard home">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 3h8l-3 5 3 3H8l3 3-3 7h8"/>
+                    <path d="M6 3h12M6 21h12"/>
+                </svg>
+            </a>
+            <nav class="rail-navigation">
+                <a class="rail-link is-active" href="#dashboard" aria-label="Dashboard" aria-current="page">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1.5"/>
                     </svg>
-                    <div>
-                        <p>Humidity</p>
-                        <h3 id="humidity">--%</h3>
-                    </div>
-                </div>
+                </a>
+                <a class="rail-link" href="#mapCard" aria-label="Weather map">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="m15.8 8.2-2.2 5.4-5.4 2.2 2.2-5.4 5.4-2.2Z"/>
+                    </svg>
+                </a>
+                <a class="rail-link" href="#popularCities" aria-label="Popular cities">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/>
+                    </svg>
+                </a>
+                <a class="rail-link" href="#forecastCard" aria-label="Forecast">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 3.5h11a2 2 0 0 1 2 2V21l-6.5-3L6 21V5.5a2 2 0 0 1 2-2Z"/>
+                        <path d="M9 8h6m-6 4h6"/>
+                    </svg>
+                </a>
+                <a class="rail-link" href="#summaryCard" aria-label="Settings">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="m19.4 15 .1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1.8 1.8 0 0 0-3 .9v.2a1.8 1.8 0 1 1-3.6 0v-.2a1.8 1.8 0 0 0-3-.9l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1.8 1.8 0 0 0-.9-3H3.7a1.8 1.8 0 1 1 0-3.6h.2a1.8 1.8 0 0 0 .9-3l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1.8 1.8 0 0 0 3-.9v-.2a1.8 1.8 0 1 1 3.6 0v.2a1.8 1.8 0 0 0 3 .9l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1.8 1.8 0 0 0 .9 3h.2a1.8 1.8 0 1 1 0 3.6h-.2a1.8 1.8 0 0 0-.9 3Z"/>
+                    </svg>
+                </a>
+            </nav>
+            <button type="button" class="rail-link rail-logout" aria-label="Log out" title="Log out">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 17l5-5-5-5m5 5H3m9-9h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/>
+                </svg>
+            </button>
+        </aside>
 
-                <div class="current-wind-row">
-                    <div class="detail-box wind-box">
-                        <svg class="detail-icon wind-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M3 8h11.5a3 3 0 1 0-2.8-4M2 12h16a3 3 0 1 1-2.8 4M4 16h6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/>
+        <main class="main-content" id="dashboard">
+            <header class="topbar">
+                <form id="weatherForm" class="search-form" role="search">
+                    <label class="sr-only" for="cityInput">Search for a location</label>
+                    <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="10.8" cy="10.8" r="6.3"/>
+                        <path d="m15.5 15.5 4 4"/>
+                    </svg>
+                    <input id="cityInput" type="search" placeholder="Search for location" autocomplete="off">
+                    <button id="searchBtn" type="submit" aria-label="Search weather">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="10.8" cy="10.8" r="6.3"/>
+                            <path d="m15.5 15.5 4 4"/>
                         </svg>
+                        <span class="sr-only">Search</span>
+                    </button>
+                </form>
+                <p id="message" class="status-message" role="status" aria-live="polite"></p>
+                <div class="topbar-utilities">
+                    <button type="button" class="notification-button" aria-label="Notifications">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/>
+                        </svg>
+                        <span class="notification-dot"></span>
+                    </button>
+                    <span class="profile-avatar" aria-label="User profile">A</span>
+                </div>
+            </header>
+
+            <section class="bento-top" aria-label="Current conditions and locations">
+                <article class="glass-card current-card" aria-labelledby="currentTitle">
+                    <header class="card-heading">
+                        <h1 id="currentTitle">Current Weather</h1>
+                        <p id="localTime">--:--</p>
+                        <p id="currentLocation" class="current-location-label">Current Location</p>
+                    </header>
+                    <div class="current-weather-display">
+                        <div id="weatherIcon" class="current-weather-icon" aria-hidden="true"></div>
                         <div>
-                            <p>Wind speed</p>
-                            <h3 id="windSpeed">-- m/s</h3>
+                            <p class="current-temperature"><span id="temperature">--</span><sup>°C</sup></p>
+                            <p id="description" class="current-condition">Current conditions</p>
                         </div>
                     </div>
-                    <div class="weather-icon" id="weatherIcon" aria-hidden="true">☁️</div>
-                </div>
-
-                <div class="weather-footer">
-                    <span class="status-dot"></span>
-                    <span>RIGHT NOW</span>
-                </div>
-            </section>
-
-            <section class="search-section">
-                <h1>Find your kind of <span>weather.</span></h1>
-                <p class="eyebrow"><span></span> YOUR DAILY FORECAST, MADE SIMPLE</p>
-
-                <form id="weatherForm">
-                    <div class="search-input-bar">
-                        <label class="sr-only" for="cityInput">City name</label>
-                        <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" fill="none" stroke="currentColor" stroke-width="1.7"/>
-                            <circle cx="12" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/>
-                        </svg>
-                        <input
-                            type="text"
-                            id="cityInput"
-                            placeholder="Search for a city..."
-                            autocomplete="off"
-                            required
-                        >
-                        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.8"/>
-                            <path d="m15.5 15.5 4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/>
-                        </svg>
+                    <div class="current-metrics">
+                        <div class="current-metric">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/>
+                                <circle cx="12" cy="12" r="2.5"/>
+                            </svg>
+                            <strong id="visibility">10 km</strong>
+                            <span>Visibility</span>
+                        </div>
+                        <div class="current-metric">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 2.8S6.2 9.2 6.2 13.7a5.8 5.8 0 0 0 11.6 0C17.8 9.2 12 2.8 12 2.8Z"/>
+                            </svg>
+                            <strong id="humidity">--%</strong>
+                            <span>Humidity</span>
+                        </div>
+                        <div class="current-metric">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M3 8h11.5a3 3 0 1 0-2.8-4M2 12h16a3 3 0 1 1-2.8 4M4 16h6"/>
+                            </svg>
+                            <strong id="windSpeed">-- km/h</strong>
+                            <span>Wind speed</span>
+                        </div>
+                        <div class="current-metric">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M4 19a8 8 0 1 1 16 0"/>
+                                <path d="m12 13 4-4M7 19h10"/>
+                            </svg>
+                            <strong id="pressure">1013 hPa</strong>
+                            <span>Pressure</span>
+                        </div>
                     </div>
+                </article>
 
-                    <div class="quick-searches" aria-label="Popular cities">
-                        <span>Try</span>
-                        <button type="button" class="city-chip" data-city="Kolkata">Kolkata</button>
-                        <button type="button" class="city-chip" data-city="London">London</button>
-                        <button type="button" class="city-chip" data-city="Tokyo">Tokyo</button>
-                    </div>
-
-                    <div class="search-status-bar">
-                        <span class="status-dot search-status-dot" aria-hidden="true"></span>
-                        <p id="message" class="status-message" role="status" aria-live="polite"></p>
-                        <button type="submit" id="searchBtn">
-                            <span id="searchButtonText">Explore</span>
-                            <span class="button-arrow" aria-hidden="true">→</span>
+                <section class="glass-card map-card" id="mapCard" aria-label="Weather location map">
+                    <div id="weatherMap" class="weather-map" role="application" aria-label="Map showing the current city"></div>
+                    <div id="mapUnavailable" class="map-unavailable" hidden>Map could not be loaded.</div>
+                    <div class="map-controls" aria-label="Map controls">
+                        <button type="button" id="zoomInBtn" aria-label="Zoom in">+</button>
+                        <button type="button" id="zoomOutBtn" aria-label="Zoom out">−</button>
+                        <button type="button" id="centerMapBtn" aria-label="Center on my location">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="7"/>
+                                <circle cx="12" cy="12" r="2"/>
+                                <path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>
+                            </svg>
                         </button>
                     </div>
-                </form>
+                    <a class="map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a>
+                </section>
+
+                <section class="glass-card popular-card" id="popularCities" aria-labelledby="popularTitle">
+                    <header class="popular-heading">
+                        <h2 id="popularTitle">Popular Cities</h2>
+                        <button type="button" id="viewMoreCities">View more</button>
+                    </header>
+                    <div class="popular-city-list">
+                        <button class="popular-city" type="button" data-city="Delhi">
+                            <span class="popular-city-left"><span class="popular-icon" data-condition="cloud"></span><strong>Delhi</strong></span>
+                            <span class="popular-condition">Partly Cloudy</span>
+                        </button>
+                        <button class="popular-city" type="button" data-city="Mumbai">
+                            <span class="popular-city-left"><span class="popular-icon" data-condition="rain"></span><strong>Mumbai</strong></span>
+                            <span class="popular-condition">Drizzle Rain</span>
+                        </button>
+                        <button class="popular-city" type="button" data-city="Hyderabad">
+                            <span class="popular-city-left"><span class="popular-icon" data-condition="rain"></span><strong>Hyderabad</strong></span>
+                            <span class="popular-condition">Heavy Rain</span>
+                        </button>
+                        <button class="popular-city" type="button" data-city="Bangalore">
+                            <span class="popular-city-left"><span class="popular-icon" data-condition="storm"></span><strong>Bangalore</strong></span>
+                            <span class="popular-condition">Light Thunder</span>
+                        </button>
+                        <button class="popular-city" type="button" data-city="Kolkata">
+                            <span class="popular-city-left"><span class="popular-icon" data-condition="sun"></span><strong>Kolkata</strong></span>
+                            <span class="popular-condition">Mostly Sunny</span>
+                        </button>
+                    </div>
+                </section>
             </section>
-        </div>
 
-        <section class="forecast-section" id="forecastSection" aria-label="5-day forecast" hidden>
-            <h2 class="conditions-label">5-DAY FORECAST</h2>
-            <div class="forecast-grid" id="forecastGrid"></div>
-        </section>
+            <section class="bento-bottom" aria-label="Weather forecast and summary">
+                <article class="glass-card forecast-card" id="forecastCard" aria-labelledby="forecastTitle">
+                    <header class="forecast-heading">
+                        <h2 id="forecastTitle">Forecast</h2>
+                        <div class="segmented-control" role="group" aria-label="Forecast range">
+                            <button type="button" class="is-active" data-days="7" aria-pressed="true">7 Days</button>
+                            <button type="button" data-days="10" aria-pressed="false">10 Days</button>
+                        </div>
+                    </header>
+                    <div id="forecastList" class="forecast-list"></div>
+                </article>
 
-    </main>
-
-    <footer>
-        <span>MADE FOR THE MOMENT</span>
-        <span>Weather data by OpenWeatherMap</span>
-    </footer>
-
+                <article class="glass-card summary-card" id="summaryCard" aria-labelledby="summaryTitle">
+                    <header class="summary-heading">
+                        <h2 id="summaryTitle">Summary</h2>
+                        <div class="summary-tabs" role="tablist" aria-label="Weather summary view">
+                            <button type="button" class="is-active" data-summary="Summary" role="tab" aria-selected="true">Summary</button>
+                            <button type="button" data-summary="Hourly" role="tab" aria-selected="false">Hourly</button>
+                            <button type="button" data-summary="More Details" role="tab" aria-selected="false">More Details</button>
+                        </div>
+                    </header>
+                    <p id="summaryDate" class="summary-date">Today</p>
+                    <div id="summaryDetails" class="summary-details" hidden></div>
+                    <div class="wave-chart-wrap">
+                        <svg id="waveChart" class="wave-chart" viewBox="0 0 1000 240" role="img" aria-label="Hourly temperature, weather and precipitation forecast"></svg>
+                    </div>
+                </article>
+            </section>
+        </main>
+    </div>
 </body>
 </html>
