@@ -1,4 +1,4 @@
-const API_URL = "https://b37eq9m82e.execute-api.eu-north-1.amazonaws.com/weather";
+const API_URL = "https://5lkuvijns9.execute-api.eu-north-1.amazonaws.com/weather";
 const DEFAULT_CITY = "Kolkata";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
