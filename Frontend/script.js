@@ -267,6 +267,7 @@ function normalizeCurrentWeather(data) {
     const weatherEntry = Array.isArray(current.weather)
         ? current.weather[0] || {}
         : {};
+    const cloudCover = current.clouds?.all ?? current.clouds;
     return {
         ...current,
         city: current.city || current.name,
@@ -274,6 +275,8 @@ function normalizeCurrentWeather(data) {
         temperature: current.temperature ?? current.main?.temp ?? current.temp,
         feels_like: current.feels_like ?? current.feelsLike ?? current.main?.feels_like,
         humidity: current.humidity ?? current.main?.humidity,
+        clouds: cloudCover == null ? null : Number(cloudCover),
+        condition: current.condition || weatherEntry.main || current.weatherMain,
         weather: typeof current.weather === "string"
             ? current.weather
             : weatherEntry.description || current.description,
@@ -315,19 +318,24 @@ function getHourlySource(data) {
 function normalizeHourlyEntry(hour) {
     const timestamp = hour.dt == null ? NaN : Number(hour.dt);
     const temperature = hour.temp ?? hour.main?.temp ?? hour.temperature;
+    const weather = Array.isArray(hour.weather) ? hour.weather[0] || {} : {};
+    const cloudCover = hour.clouds?.all ?? hour.clouds;
     return {
         temperature: temperature == null ? NaN : Number(temperature),
         probability: normalizeProbability(
             hour.pop ?? hour.precipitation_probability ?? hour.rain_probability
         ),
+        humidity: hour.humidity ?? hour.main?.humidity,
+        clouds: cloudCover == null ? null : Number(cloudCover),
+        condition: hour.condition || weather.main || hour.weatherMain,
         windSpeed: toWindSpeed(
             hour.wind_speed ?? hour.windSpeed ?? hour.wind?.speed
         ),
         timestamp: Number.isFinite(timestamp)
             ? timestamp
             : parseForecastTimestamp(hour.dt_txt),
-        icon: hour.icon || hour.weather?.[0]?.icon || "",
-        description: hour.description || hour.weather?.[0]?.description || ""
+        icon: hour.icon || weather.icon || "",
+        description: hour.description || weather.description || ""
     };
 }
 
@@ -397,6 +405,7 @@ function getDailyForecast(data, rawHourly, timezone) {
 
 function normalizeDailyEntry(day, timezone) {
     const weather = Array.isArray(day.weather) ? day.weather[0] || {} : {};
+    const cloudCover = day.clouds?.all ?? day.clouds;
     const date = day.date
         || day.dt_txt?.slice(0, 10)
         || (day.dt == null
@@ -409,6 +418,9 @@ function normalizeDailyEntry(day, timezone) {
         tempMax: day.tempMax ?? day.temp_max ?? day.temp?.max ?? day.main?.temp_max,
         tempMin: day.tempMin ?? day.temp_min ?? day.temp?.min ?? day.main?.temp_min,
         description: day.description || weather.description || "",
+        condition: day.condition || weather.main || day.weatherMain,
+        humidity: day.humidity ?? day.main?.humidity,
+        clouds: cloudCover == null ? null : Number(cloudCover),
         icon: day.icon || weather.icon || "",
         pop: day.pop ?? day.precipitation_probability
     };
@@ -963,7 +975,7 @@ function updateSummaryDate(mode, current, timezone) {
         timeZone: "UTC"
     }).format(date);
     const heading = mode === "Hourly"
-        ? "Precipitation and wind · 3-hour intervals"
+        ? "Temperature · 3-hour intervals"
         : mode === "More Details"
             ? "Local conditions and forecast metrics"
             : `Today - ${formattedDate}`;
@@ -1048,11 +1060,16 @@ const FALLBACK_CHART_TIMES = [
 ];
 
 function buildForecastIntervals(hourly, current, forecast) {
+    const fallbackRainMetrics = {
+        humidity: current.humidity,
+        clouds: current.clouds,
+        condition: current.condition || current.weather
+    };
     if (hourly.length >= 10) {
         return hourly.slice(0, 10).map(function (hour, index) {
             return {
                 ...hour,
-                probability: hour.probability ?? 0,
+                probability: resolveRainProbability(hour, fallbackRainMetrics),
                 windSpeed: hour.windSpeed ?? toWindSpeed(current.wind_speed) ?? 0,
                 label: index === 0
                     ? "Now"
@@ -1111,17 +1128,9 @@ function buildForecastIntervals(hourly, current, forecast) {
     const observedWeight = sourceTemperatures.length
         ? Math.min(0.82, 0.42 + sourceTemperatures.length * 0.04)
         : 0;
-    const dailyRainValues = forecast.map(function (day) {
-        return normalizeProbability(day.pop);
-    }).filter(Number.isFinite);
     const observedRain = resampleValues(hourly.map(function (hour) {
-        return hour.probability;
-    }).filter(Number.isFinite), 10);
-    const defaultRain = dailyRainValues.length
-        ? Math.max(...dailyRainValues)
-        : /rain|drizzle|thunder/i.test(current.weather || "")
-            ? 60
-            : 5;
+        return resolveRainProbability(hour, fallbackRainMetrics);
+    }), 10);
     const observedWind = resampleValues(hourly.map(function (hour) {
         return hour.windSpeed;
     }).filter(Number.isFinite), 10);
@@ -1133,6 +1142,9 @@ function buildForecastIntervals(hourly, current, forecast) {
         const sample = hourly.length
             ? hourly[Math.round(index * (hourly.length - 1) / 9)]
             : null;
+        const dailySample = forecast.length
+            ? forecast[Math.min(Math.floor(index / 8), forecast.length - 1)]
+            : null;
         const temperatureValue = sourceTemperatures.length
             ? baseline[index] * (1 - observedWeight) + observed[index] * observedWeight
             : temperature;
@@ -1141,18 +1153,53 @@ function buildForecastIntervals(hourly, current, forecast) {
                 ? currentTemperature
                 : temperatureValue,
             probability: observedRain.length
-                ? observedRain[index]
-                : defaultRain,
+                ? Math.round(observedRain[index])
+                : resolveRainProbability(dailySample, fallbackRainMetrics),
             windSpeed: observedWind.length
                 ? observedWind[index]
                 : currentWind || 0,
             timestamp: null,
             label: FALLBACK_CHART_TIMES[index],
-            icon: sample?.icon || fallbackIcon,
-            description: sample?.description || fallbackDescription,
+            icon: sample?.icon || dailySample?.icon || fallbackIcon,
+            description: sample?.description || dailySample?.description || fallbackDescription,
             isNow: index === 0
         };
     });
+}
+
+function resolveRainProbability(interval, fallbackMetrics) {
+    const probability = interval?.probability != null
+        ? Number(interval.probability)
+        : normalizeProbability(interval?.pop ?? interval?.precipitation_probability);
+    if (Number.isFinite(probability) && probability > 0) {
+        return Math.round(Math.min(100, probability));
+    }
+
+    const humidityValue = Number(interval?.humidity ?? fallbackMetrics.humidity);
+    const humidity = Number.isFinite(humidityValue)
+        ? Math.min(100, Math.max(0, humidityValue))
+        : 50;
+    const cloudsValue = Number(interval?.clouds ?? fallbackMetrics.clouds);
+    const clouds = Number.isFinite(cloudsValue)
+        ? Math.min(100, Math.max(0, cloudsValue))
+        : 40;
+    const condition = String(
+        interval?.condition
+        || interval?.description
+        || fallbackMetrics.condition
+        || ""
+    ).toLowerCase();
+
+    if (/thunderstorm|rain|drizzle/.test(condition)) {
+        return Math.round(65 + humidity * 0.25);
+    }
+    if (/mist|haze|fog|cloud/.test(condition)) {
+        return Math.min(60, Math.max(10, Math.round(humidity * 0.35 + clouds * 0.2)));
+    }
+    if (/clear/.test(condition)) {
+        return Math.max(5, Math.round(humidity * 0.15));
+    }
+    return Math.min(60, Math.max(10, Math.round(humidity * 0.35 + clouds * 0.2)));
 }
 
 function interpolateTemperatureCurve(currentTemperature, high, low, count) {
@@ -1195,7 +1242,8 @@ function resampleValues(values, count) {
 
 function renderForecast(days) {
     forecastList.replaceChildren();
-    const visibleDays = days.slice(0, forecastLimit);
+    const forecastDays = extendForecastWithNextDay(days);
+    const visibleDays = forecastDays.slice(0, forecastLimit);
 
     if (!visibleDays.length) {
         const empty = document.createElement("p");
@@ -1232,9 +1280,41 @@ function renderForecast(days) {
         row.append(temperature, date);
         row.addEventListener("click", function () {
             selectedForecastIndex = index;
-            renderForecast(days);
+            renderForecast(forecastDays);
         });
         forecastList.append(row);
+    });
+}
+
+function extendForecastWithNextDay(days) {
+    if (days.length !== 5) {
+        return days;
+    }
+
+    const lastDay = days[days.length - 1];
+    const lastDate = lastDay.date
+        ? Date.parse(`${String(lastDay.date).slice(0, 10)}T00:00:00Z`)
+        : Number(lastDay.dt) * 1000;
+    if (!Number.isFinite(lastDate)) {
+        return days;
+    }
+
+    const nextDate = new Date(lastDate + 86400000).toISOString().slice(0, 10);
+    const lastHigh = Number(lastDay.tempMax);
+    const lastLow = Number(lastDay.tempMin);
+    const high = Number.isFinite(lastHigh)
+        ? lastHigh - 1
+        : Number.isFinite(lastLow)
+            ? lastLow + 4
+            : 20;
+    const low = Number.isFinite(lastLow) ? lastLow - 1 : high - 4;
+
+    return days.concat({
+        ...lastDay,
+        date: nextDate,
+        dayName: formatWeekday(nextDate),
+        tempMax: high,
+        tempMin: low
     });
 }
 
@@ -1273,9 +1353,10 @@ function renderWaveChart(intervals, mode) {
     chart.setAttribute(
         "aria-label",
         mode === "Hourly"
-            ? "Hourly precipitation and wind forecast"
+            ? "Hourly temperature forecast"
             : "Hourly temperature, weather and precipitation forecast"
     );
+    chart.classList.toggle("is-hourly", mode === "Hourly");
     const chartIntervals = Array.isArray(intervals) && intervals.length >= 10
         ? intervals.slice(0, 10)
         : buildForecastIntervals(
@@ -1285,7 +1366,7 @@ function renderWaveChart(intervals, mode) {
         );
     const isHourly = mode === "Hourly";
     const primaryValues = chartIntervals.map(function (interval) {
-        return isHourly ? interval.probability : interval.temperature;
+        return interval.temperature;
     });
     const primaryMin = Math.min(...primaryValues);
     const primaryMax = Math.max(...primaryValues);
@@ -1296,13 +1377,16 @@ function renderWaveChart(intervals, mode) {
     const bottom = 127;
     const points = chartIntervals.map(function (interval, index) {
         const x = left + index / (chartIntervals.length - 1) * (right - left);
-        const value = isHourly ? interval.probability : interval.temperature;
+        const value = interval.temperature;
         const y = bottom - (value - primaryMin) / primaryRange * (bottom - top);
         return { x: x, y: y, value: value, ...interval };
     });
 
     const defs = document.createElementNS(SVG_NS, "defs");
-    defs.innerHTML = '<linearGradient id="waveGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7DD3FC" stop-opacity=".35"/><stop offset="100%" stop-color="#7DD3FC" stop-opacity=".02"/></linearGradient><radialGradient id="chartSun"><stop stop-color="#FFF1B8"/><stop offset=".58" stop-color="#FBBF24"/><stop offset="1" stop-color="#F59E0B"/></radialGradient><linearGradient id="chartCloud" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#B9DDF7"/></linearGradient><filter id="pointGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+    const waveGradient = isHourly
+        ? '<stop offset="0%" stop-color="#7DD3FC" stop-opacity=".35"/><stop offset="100%" stop-color="#7DD3FC" stop-opacity=".02"/>'
+        : '<stop offset="0%" stop-color="#6EE7B7" stop-opacity=".25"/><stop offset="100%" stop-color="#60A5FA" stop-opacity=".04"/>';
+    defs.innerHTML = `<linearGradient id="waveGradient" x1="0" y1="0" x2="0" y2="1">${waveGradient}</linearGradient><radialGradient id="chartSun"><stop stop-color="#FFF1B8"/><stop offset=".58" stop-color="#FBBF24"/><stop offset="1" stop-color="#F59E0B"/></radialGradient><linearGradient id="chartCloud" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#B9DDF7"/></linearGradient><filter id="chartCloudBlur" x="-20%" y="-35%" width="140%" height="170%"><feGaussianBlur stdDeviation="1.5"/></filter>`;
     chart.append(defs);
 
     const path = createSplinePath(points);
@@ -1311,50 +1395,22 @@ function renderWaveChart(intervals, mode) {
     area.setAttribute("class", "wave-area");
     chart.append(area);
 
+    if (!isHourly) {
+        addSummaryAtmosphere(chart, chartWidth);
+    }
+
     const line = document.createElementNS(SVG_NS, "path");
     line.setAttribute("d", path);
     line.setAttribute("class", "wave-line");
     chart.append(line);
 
-    if (isHourly) {
-        const windValues = chartIntervals.map(function (interval) {
-            return interval.windSpeed || 0;
-        });
-        const maxWind = Math.max(1, ...windValues);
-        const windPoints = chartIntervals.map(function (interval, index) {
-            return {
-                x: points[index].x,
-                y: bottom - (interval.windSpeed || 0) / maxWind * (bottom - top)
-            };
-        });
-        const windLine = document.createElementNS(SVG_NS, "path");
-        windLine.setAttribute("d", createSplinePath(windPoints));
-        windLine.setAttribute("class", "wind-wave-line");
-        chart.append(windLine);
-        addSvgText(chart, chartWidth / 2, 20, "Precipitation chance  ·  Wind speed", "wave-legend");
-    }
-
     points.forEach(function (point) {
-        const glow = document.createElementNS(SVG_NS, "circle");
-        glow.setAttribute("cx", point.x);
-        glow.setAttribute("cy", point.y);
-        glow.setAttribute("r", "5");
-        glow.setAttribute("class", "wave-point-glow");
-        chart.append(glow);
-
-        const marker = document.createElementNS(SVG_NS, "circle");
-        marker.setAttribute("cx", point.x);
-        marker.setAttribute("cy", point.y);
-        marker.setAttribute("r", "2.5");
-        marker.setAttribute("class", "wave-point");
-        chart.append(marker);
-
-        const valueLabel = isHourly
-            ? `${Math.round(point.probability)}%`
-            : `${Math.round(point.temperature)}°`;
+        const valueLabel = `${Math.round(point.temperature)}°`;
         addSvgText(chart, point.x, Math.max(29, point.y - 13), valueLabel, "wave-temperature");
         addSvgWeatherIcon(chart, point.x, 153, point.icon, point.description);
-        addSvgText(chart, point.x, 187, `${point.probability}%`, "wave-probability");
+        if (!isHourly) {
+            addSvgText(chart, point.x, 187, `${point.probability}%`, "wave-probability");
+        }
         addSvgText(
             chart,
             point.x,
@@ -1362,6 +1418,41 @@ function renderWaveChart(intervals, mode) {
             point.label || (point.isNow ? "Now" : formatChartTime(point.timestamp, point.timezone)),
             "wave-time"
         );
+    });
+}
+
+function addSummaryAtmosphere(chart, chartWidth) {
+    const drizzle = document.createElementNS(SVG_NS, "g");
+    drizzle.setAttribute("class", "summary-drizzle");
+    const streakPositions = [
+        [0.06, 13], [0.17, 30], [0.28, 8], [0.39, 23], [0.5, 6],
+        [0.61, 32], [0.72, 15], [0.83, 27], [0.94, 10]
+    ];
+    streakPositions.forEach(function (position) {
+        const x = chartWidth * position[0];
+        const streak = document.createElementNS(SVG_NS, "line");
+        streak.setAttribute("x1", x);
+        streak.setAttribute("y1", position[1] + 9);
+        streak.setAttribute("x2", x + 5);
+        streak.setAttribute("y2", position[1]);
+        drizzle.append(streak);
+    });
+    chart.append(drizzle);
+
+    const cloudScale = Math.min(1, Math.max(0.75, chartWidth / 1000));
+    const cloudPath = "M 5 26 C 1 20 5 13 13 13 C 14 6 22 3 29 8 C 35 -1 49 0 53 10 C 64 6 74 13 73 23 C 82 20 90 25 88 31 H 9 C 7 31 5 29 5 26 Z";
+    [
+        { x: chartWidth * 0.12, y: 7 },
+        { x: chartWidth * 0.77, y: 15 }
+    ].forEach(function (position, index) {
+        const cloud = document.createElementNS(SVG_NS, "g");
+        cloud.setAttribute("class", "summary-cloud");
+        cloud.setAttribute("transform", `translate(${position.x} ${position.y}) scale(${cloudScale})`);
+        cloud.setAttribute("style", `animation-delay: ${index * -2.5}s`);
+        const silhouette = document.createElementNS(SVG_NS, "path");
+        silhouette.setAttribute("d", cloudPath);
+        cloud.append(silhouette);
+        chart.append(cloud);
     });
 }
 

@@ -455,8 +455,8 @@ p {
     border-radius: inherit;
 }
 
-.weather-map .leaflet-tile {
-    filter: saturate(0.55) brightness(1.08);
+.leaflet-tile-pane {
+    filter: sepia(0.18) hue-rotate(48deg) saturate(1.65) brightness(1.02) contrast(0.95);
 }
 
 .leaflet-control-attribution {
@@ -729,7 +729,7 @@ p {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 0 12px;
+    padding: 7px 12px;
     color: #fff;
     background: transparent;
     border: 1px solid transparent;
@@ -856,15 +856,33 @@ p {
     stroke-width: 1.7;
 }
 
-.wave-point-glow {
-    fill: rgba(125, 211, 252, 0.3);
-    filter: url(#pointGlow);
+.summary-drizzle {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.18);
+    stroke-linecap: round;
+    stroke-width: 1.2;
 }
 
-.wave-point {
-    fill: #fff;
-    stroke: #7dd3fc;
-    stroke-width: 1.5;
+.summary-cloud {
+    fill: rgba(255, 255, 255, 0.14);
+    filter: url(#chartCloudBlur);
+    animation: cloud-float 7s ease-in-out infinite alternate;
+}
+
+@keyframes cloud-float {
+    from {
+        translate: 0 0;
+    }
+
+    to {
+        translate: 0 2px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .summary-cloud {
+        animation: none;
+    }
 }
 
 .wave-legend {
@@ -885,6 +903,10 @@ p {
 .wave-probability {
     fill: rgba(255, 255, 255, 0.7);
     font-size: 10px;
+}
+
+.wave-chart.is-hourly .wave-probability {
+    display: none;
 }
 
 .wave-time {
